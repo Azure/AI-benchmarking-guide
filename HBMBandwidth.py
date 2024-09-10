@@ -8,8 +8,6 @@ from prettytable import PrettyTable
 import numpy as np
 import torch
 
-from Infra import sqlite
-
 # import matplotlib.pyplot as plt
 # import matplotlib.ticker as ticker
 # from matplotlib.ticker import
