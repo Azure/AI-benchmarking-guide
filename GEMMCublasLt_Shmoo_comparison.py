@@ -11,7 +11,7 @@ import numpy as np
 import torch
 from matplotlib.ticker import FormatStrFormatter
 import roofline
-from Infra import sqlite, tools
+from Infra import tools
 
 
 def parse_csv(filename):
