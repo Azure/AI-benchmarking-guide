@@ -8,10 +8,6 @@ import statistics
 #import matplotlib.pyplot as plt
 #import matplotlib.ticker as ticker
 #from matplotlib.ticker import 
-
-from Infra import sqlite
-
-
 import numpy as np
 
 class NVBandwidth:
