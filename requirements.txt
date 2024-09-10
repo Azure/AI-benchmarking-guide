@@ -1,0 +1,12 @@
+cmake
+torch
+matplotlib
+scipy
+pandas
+numpy
+ninja
+packaging
+torchvision
+flash-attn
+prettytable
+docker
