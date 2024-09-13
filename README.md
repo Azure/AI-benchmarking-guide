@@ -17,11 +17,9 @@ The CuBLASLt General Matrix-to-matrix Multiply (GEMM) is a performance evaluatio
 
 In the guide, we run CuBLASLt on various matrix sizes. See the `run_model_sizes` function in `GEMMCublasLt.py`. 
 
-For Power & Clock Frequency analysis, see `run_nvml`. It consists of M=N=K=8192 CuBLASLt GEMM ran repeatedly over 120 seconds, precision FP8. The power draw, clock frequency, and GPU temperature are measured and charted over this interval. The result should look something like this:
-![GEMMCublasLt_Power_NVIDIA H100 80GB HBM3_fp8e4m3](https://github.com/user-attachments/assets/ac50b2ba-bc65-4713-8cee-fab7b1424bd2)
+For Power & Clock Frequency analysis, see `run_nvml`. It consists of M=N=K=8192 CuBLASLt GEMM ran repeatedly over 120 seconds, precision FP8. The power draw, clock frequency, and GPU temperature are measured and charted over this interval. 
 
-For the sweeps over various values of m, n, and k, see `run_shmoo`. This takes up the most time, so feel free to comment out the call in `runner.py` if you are not interested in running this. It generates these plots for m,n,k values, allowing you to see the performance over a range of matrix sizes.
-![GEMMCublasLt M Shmoo_NVIDIA H100 80GB HBM3_fp8e4m3](https://github.com/user-attachments/assets/052f2f6f-c6ea-4ae4-b9a1-b2575cf576fd)
+For the sweeps over various values of m, n, and k, see `run_shmoo`. This takes up the most time, so feel free to comment out the call in `runner.py` if you are not interested in running this. It generates plots for m,n,k values, allowing you to see the performance over a range of matrix sizes.
 
 ### 2. Flash Attention
 FlashAttention is an algorithm to speed up attention and reduce the memory footprint for Natural Language Models—without any approximation. It is meant to speed up training and inference by reordering the attention computation and leveraging classical techniques (tiling, recomputation) to reduce memory usage from quadratic to linear in sequence length. 
