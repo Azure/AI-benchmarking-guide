@@ -62,7 +62,7 @@ def run_CublasLt():
     # generates power, clock, and gpu temperature plots
     test.run_nvml()
 
-    # runs GEMM sweep and generates shmoo plots
+    # runs GEMM sweep and generates shmoo plots (takes about 20 minutes)
     # test.run_shmoo()
     
 
