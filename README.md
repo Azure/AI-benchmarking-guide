@@ -15,9 +15,10 @@ See `config.json` for specific settings for the benchmarks
 ### 1. CublasLt GEMM
 The CuBLASLt General Matrix-to-matrix Multiply (GEMM) is a performance evaluation test for the CUDA Basic Linear Algebra Subroutines (CuBLAS) library for matrix and vector operations that leverages the parallel processing capabilities of GPUs. The benchmark is designed to assess the speed of matrix-to-matrix multiplication, which is the fundamental operation in AI applications, by measuring for varying matrix sizes (m, n, and k). The results shown below are with random initialization (best representation of real-life workloads) and datatype FP8.
 
-In the guide, we test for various matrix sizes. See the `run_model_sizes` function in `GEMMCublasLt.py`
+In the guide, we run CuBLASLt on various matrix sizes. See the `run_model_sizes` function in `GEMMCublasLt.py`. 
 
-For Power & Clock Frequency analysis, see `run_nvml`. It consists of M=N=K=8192 CuBLASLt GEMM ran repeatedly over 120 seconds, precision FP8. The power draw, clock frequency, and GPU temperature are measured and charted over this interval. 
+For Power & Clock Frequency analysis, see `run_nvml`. It consists of M=N=K=8192 CuBLASLt GEMM ran repeatedly over 120 seconds, precision FP8. The power draw, clock frequency, and GPU temperature are measured and charted over this interval. The result should look something like this:
+![GEMMCublasLt_Power_NVIDIA H100 80GB HBM3_fp8e4m3](https://github.com/user-attachments/assets/ac50b2ba-bc65-4713-8cee-fab7b1424bd2)
 
 For the sweeps over various values of m, n, and k, see `run_shmoo`. This takes up the most time, so feel free to comment out the call in `runner.py` if you are not interested in running this. It generates these plots for m,n,k values, allowing you to see the performance over a range of matrix sizes.
 ![GEMMCublasLt M Shmoo_NVIDIA H100 80GB HBM3_fp8e4m3](https://github.com/user-attachments/assets/052f2f6f-c6ea-4ae4-b9a1-b2575cf576fd)
@@ -37,6 +38,7 @@ High Bandwidth Memory (HBM) is designed to provide a significant boost in memory
 The NV Bandwidth benchmark measures the bandwidth achieved while transferring packets CPU-to-GPU and GPU-to-CPU over PCIe, and GPU-to-GPU over NVLink. 
 
 ### 6. LLM Benchmarks
+This section contains benchmarking tests for various Inference models. The tests are performed in a TensorRT-LLM environment.
 
 You need huggingface credentials to download all the model weigths. Visit huggingface.co to create an account and obtain access to the models.
 
