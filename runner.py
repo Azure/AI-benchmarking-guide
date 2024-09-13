@@ -95,6 +95,8 @@ def run_LLMBenchmark():
     test.run_benchmark()
 
 machine_name = get_system_specs()
+
+# Tests (comment out the ones you don't want to run)
 run_CublasLt()
 os.chdir(current)
 run_NCCLBandwidth()
