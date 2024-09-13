@@ -21,8 +21,6 @@ For Power & Clock Frequency analysis, see `run_nvml`. It consists of M=N=K=8192 
 
 For the sweeps over various values of m, n, and k, see `run_shmoo`. This takes up the most time, so feel free to comment out the call in `runner.py` if you are not interested in running this. It generates these plots for m,n,k values, allowing you to see the performance over a range of matrix sizes.
 ![GEMMCublasLt M Shmoo_NVIDIA H100 80GB HBM3_fp8e4m3](https://github.com/user-attachments/assets/052f2f6f-c6ea-4ae4-b9a1-b2575cf576fd)
-![GEMMCublasLt N Shmoo_NVIDIA H100 80GB HBM3_fp8e4m3](https://github.com/user-attachments/assets/058797b8-4bf6-4dba-924d-c82246d2c783)
-![GEMMCublasLt_K Sweep_NVIDIA H100 80GB HBM3_roofline_fp8e4m3](https://github.com/user-attachments/assets/8031e32e-f7ff-434f-81a4-c21228432613)
 
 ### 2. Flash Attention
 FlashAttention is an algorithm to speed up attention and reduce the memory footprint for Natural Language Models—without any approximation. It is meant to speed up training and inference by reordering the attention computation and leveraging classical techniques (tiling, recomputation) to reduce memory usage from quadratic to linear in sequence length. 
