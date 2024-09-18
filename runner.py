@@ -6,6 +6,7 @@ import HBMBandwidth as HBM
 import NVBandwidth as NV
 import NCCLBandwidth as NCCL
 import FlashAttention as FA
+import FIO as FIO
 from Infra import tools
 import LLMBenchmark as llmb
 
@@ -84,7 +85,11 @@ def run_NCCLBandwidth():
 def run_FlashAttention():
     test = FA.FlashAttention("config.json", machine_name)
     test.run()
-
+    
+def run_FIO():
+    test = FIO.FIO("config.json", machine_name)
+    test.run()
+    
 def run_LLMBenchmark():
     test = llmb.LLMBenchmark("config.json", current, machine_name)
     test_cublaslt = gemm.GEMMCublastLt("config.json",machine_name)
@@ -106,4 +111,7 @@ os.chdir(current)
 run_NVBandwidth()
 os.chdir(current)
 run_FlashAttention()
-run_LLMBenchmark()
+os.chdir(current)
+run_FIO()
+
+# run_LLMBenchmark()
