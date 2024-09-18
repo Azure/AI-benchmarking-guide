@@ -2,7 +2,7 @@
 
 Inefficient workload optimization can significantly increase operational costs for customers, making it essential to define clear performance benchmarks. This benchmarking guide establishes performance standards across a series of microbenchmarks, tests, and language models. These results are designed to help Azure users maximize efficiency, identify bottlenecks, and fine-tune resource allocation on Azure. By providing detailed performance insights, this guide ensures users can optimize workloads for both cost and performance, improving overall cloud infrastructure utilization. The guide currently supports the ND A100 v4, ND H100 v5, and ND H200 v5 series.
 
-## Tests Included: 
+## Tests Included
 
 ### 1. Microbenchmark - CublasLt GEMM
 The CuBLASLt General Matrix-to-matrix Multiply (GEMM) is a performance evaluation test for the CUDA Basic Linear Algebra Subroutines (CuBLAS) library for matrix and vector operations that leverages the parallel processing capabilities of GPUs. The benchmark is designed to assess the speed of matrix-to-matrix multiplication, which is the fundamental operation in AI applications, by measuring for varying matrix sizes (m, n, and k). The results shown below are with random initialization (best representation of real-life workloads) and datatype FP8.
@@ -30,7 +30,7 @@ FlashAttention is an algorithm to speed up attention and reduce the memory footp
 ### 6. End-to-end Inference Workloads
 To assess how different system components (as tested by the microbenchmarks) affect overall performance, we suggetsing running some end-to-end workloads. The models we used for benchmarking are the current industry standards across various sizes: Mistral (7B parameters), LLAMA 3 (8B, 70B, and 405B). The performance of the model inferencing (throughput) is measured in tokens per second, accounting for both processing input tokens and generating output tokens. The workloads run in a TensorRT-LLM environment. Users need huggingface credentials to download all the model weigths. Visit huggingface.co to create an account and obtain access to the models. 
 
-## How to run the benchmarking guide: 
+## How to run the benchmarking guide
 
 ### Requirements
 All the requirements for the benchmarks can be intalled with a simple command: `bash install_requirements.sh`. This will install the Python PIP, NCCL, and Docker packages needed.
