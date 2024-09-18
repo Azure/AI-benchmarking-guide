@@ -13,19 +13,19 @@ For Power & Clock Frequency analysis, see `run_nvml`. It consists of M=N=K=8192 
 
 For the sweeps over various values of m, n, and k, see `run_shmoo`. It generates plots for m,n,k values, allowing you to see the performance over a range of matrix sizes. This test takes up the most time, so it is recommended to skip it when running the guide for the first time. 
 
-### 2. Microbenchmark - Flash Attention
-FlashAttention is an algorithm to speed up attention and reduce the memory footprint for Natural Language Models—without any approximation. It is meant to speed up training and inference by reordering the attention computation and leveraging classical techniques (tiling, recomputation) to reduce memory usage from quadratic to linear in sequence length. 
-
-### 3. Microbenchmark - NCCL Bandwidth
+### 2. Microbenchmark - NCCL Bandwidth
 
 The NCCL bandwidth test is a benchmark provided by NVIDIA's NCCL (NVIDIA Collective Communications Library) library. NCCL is a high-performance library, designed to accelerate interGPU communication, that optimizes communication between multiple GPUs within a single node or across multiple nodes in a multi-GPU system. 
 The performance measured is the data transfer bandwidth between GPUs using various communication patterns, such as point-to-point (pairwise) communication or collective communication (communication between multiple GPUs). 
 
-### 4. Microbenchmark - HBM Bandwidth
+### 3. Microbenchmark - HBM Bandwidth
 High Bandwidth Memory (HBM) is designed to provide a significant boost in memory bandwidth for GPUs by handling vast amounts of data through vertical stacking of multiple layers of memory chips, connected by through-silicon vias. 
 
-### 5. Microbenchmark - NV Bandwidth
+### 4. Microbenchmark - NV Bandwidth
 The NV Bandwidth benchmark measures the bandwidth achieved while transferring packets CPU-to-GPU and GPU-to-CPU over PCIe, and GPU-to-GPU over NVLink. 
+
+### 5. Microbenchmark - Flash Attention
+FlashAttention is an algorithm to speed up attention and reduce the memory footprint for Natural Language Models—without any approximation. It is meant to speed up training and inference by reordering the attention computation and leveraging classical techniques (tiling, recomputation) to reduce memory usage from quadratic to linear in sequence length. 
 
 ### 6. End-to-end Inference Workloads
 To assess how different system components (as tested by the microbenchmarks) affect overall performance, we suggetsing running some end-to-end workloads. The models we used for benchmarking are the current industry standards across various sizes: Mistral (7B parameters), LLAMA 3 (8B, 70B, and 405B). The performance of the model inferencing (throughput) is measured in tokens per second, accounting for both processing input tokens and generating output tokens. The workloads run in a TensorRT-LLM environment. Users need huggingface credentials to download all the model weigths. Visit huggingface.co to create an account and obtain access to the models. 
