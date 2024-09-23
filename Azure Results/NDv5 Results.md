@@ -32,6 +32,10 @@ The results shown below are with random initialization (best representation of r
 | 6144        | 12288     | 12288    | 1318.0                 | 1351.4                  | \-2.4%               |
 | 802816      | 192       | 768      | 717.5                  | 663.8                   | 8.1%                 |
 
+Running 8k CuBLASLt should bring both ND H100v5 and ND H200 v5 to TDP of 700W.
+![GEMMCublasLt_Power_NVIDIA H200_fp8e4m3](https://github.com/user-attachments/assets/298d5852-357c-43f7-9900-b1e32ebc1b53)
+
+
 ### HBM Bandwidth
 
 |       | ND H200 V5 (TB/s) | ND H100 v5 (TB/s) | % Speedup |
