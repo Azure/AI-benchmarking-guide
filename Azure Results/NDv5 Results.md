@@ -46,9 +46,7 @@ The results shown below are with random initialization (best representation of r
 
 The performance (in TFLOPS), in table below, represents the performance for a head dimension of 128, a batch size of 2, and a sequence length of 8192.
 
-|                             | NVIDIA ND H200 V5 
-
-(TFLOPS) | ND H100 v5 (TFLOPS) |
+|                             | NVIDIA ND H200 V5 (TFLOPS) | ND H100 v5 (TFLOPS) |
 | --------------------------- | ---------------------------- | ------------------- |
 | Standard attention(PyTorch) | 161.5                        | 145.1               |
 | Flash attention 2.0         | 329.3                        | 327.9               |
