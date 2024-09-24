@@ -1,14 +1,14 @@
 import json
 import os
 import subprocess
-import GEMMCublasLt as gemm
-import HBMBandwidth as HBM
-import NVBandwidth as NV
-import NCCLBandwidth as NCCL
-import FlashAttention as FA
-import FIO as FIO
+from Benchmarks import GEMMCublasLt as gemm
+from Benchmarks import HBMBandwidth as HBM
+from Benchmarks import NVBandwidth as NV
+from Benchmarks import NCCLBandwidth as NCCL
+from Benchmarks import FlashAttention as FA
+from Benchmarks import FIO
 from Infra import tools
-import LLMBenchmark as llmb
+from Benchmarks import LLMBenchmark as llmb
 
 machine_name = ""
 current = os.getcwd()
