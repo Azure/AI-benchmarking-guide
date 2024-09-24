@@ -5,7 +5,7 @@ Inefficient workload optimization can significantly increase operational costs f
 ## Tests Included
 
 ### 1. Microbenchmark - CublasLt GEMM
-The [CuBLASLt General Matrix-to-matrix Multiply (GEMM)](https://github.com/Azure/AI-benchmarking-guide/blob/main/Benchmarks/GEMMCublasLt.py) is a performance evaluation test for the CUDA Basic Linear Algebra Subroutines (CuBLAS) library for matrix and vector operations that leverages the parallel processing capabilities of GPUs. The benchmark is designed to assess the speed of matrix-to-matrix multiplication, which is the fundamental operation in AI applications, by measuring for varying matrix sizes (m, n, and k). The results shown below are with random initialization (best representation of real-life workloads) and datatype FP8.
+The [CuBLASLt General Matrix-to-matrix Multiply](https://github.com/Azure/AI-benchmarking-guide/blob/main/Benchmarks/GEMMCublasLt.py) (GEMM) is a performance evaluation test for the CUDA Basic Linear Algebra Subroutines (CuBLAS) library for matrix and vector operations that leverages the parallel processing capabilities of GPUs. The benchmark is designed to assess the speed of matrix-to-matrix multiplication, which is the fundamental operation in AI applications, by measuring for varying matrix sizes (m, n, and k). The results shown below are with random initialization (best representation of real-life workloads) and datatype FP8.
 
 In the guide, we run CuBLASLt on various matrix sizes. See the [`run_model_sizes`](https://github.com/Azure/AI-benchmarking-guide/blob/7550bcd86a800f94c28dae17d86d3680ce310076/Benchmarks/GEMMCublasLt.py#L246) function in `GEMMCublasLt.py`. 
 
