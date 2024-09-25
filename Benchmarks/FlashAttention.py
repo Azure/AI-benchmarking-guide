@@ -21,7 +21,7 @@ class FlashAttention:
         build_path = os.path.join(current, 'flash-attention/benchmarks')
         os.chdir(build_path)
         print("Running Flash Attention...")
-        results = subprocess.run('python3 benchmark_flash_attention.py | grep -A 2 "### causal=False, headdim=128, batch_size=2, seqlen=8192 ###"',shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        results = subprocess.run('python3 benchmark_flash_attention.py | grep -A 2 "batch_size=2, seqlen=8192 ###"',shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         os.chdir(current)
         file = open("Outputs/FlashAttention_" + self.machine_name + ".txt", "w")
         res = results.stdout.decode('utf-8').split("\n")
