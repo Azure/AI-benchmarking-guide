@@ -48,6 +48,11 @@ class HBMBandwidth:
         os.chdir(build_path)
 
         babelstream_build_path = os.path.join(build_path, "build")
+
+        arch ="sm_90"
+        if "A100" in self.machine_name:
+            arch = "sm_80"
+            
         if not os.path.isdir(babelstream_build_path):
             os.mkdir(babelstream_build_path)
             os.chdir(babelstream_build_path)
@@ -56,7 +61,7 @@ class HBMBandwidth:
                     "cmake",
                     "../",
                     "-DMODEL=cuda",
-                    "-DCUDA_ARCH=sm_90",
+                    "-DCUDA_ARCH=" + arch,
                     "-DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc",
                 ],
                 stdout=subprocess.PIPE,
