@@ -26,6 +26,10 @@ class GEMMCublastLt:
         self.machine_name = machine
         self.buffer = []
 
+        # A100 does not support fp8
+        if "A100" in machine:
+            self.datatype = "fp16"
+
     def get_config(self, path: str):
         file = open(path)
         data = json.load(file)
@@ -246,16 +250,18 @@ class GEMMCublastLt:
     def run_model_sizes(self):
         print("Running CublasLt...")
         current = os.getcwd()
-    
-        m_dims = [1024, 2048, 4096, 8192, 16384, 32768, 1024, 6144, 802816, 802816] 
-        n_dims = [1024, 2048, 4096, 8192, 16384, 32768, 2145, 12288, 192, 192]
-        k_dims = [1024, 2048, 4096, 8192, 16384, 32768, 1024, 12288, 192, 768]
+        if self.datatype == "fp8e4m3":
+            m_dims = [1024, 2048, 4096, 8192, 16384, 32768, 1024, 6144, 802816, 802816] 
+            n_dims = [1024, 2048, 4096, 8192, 16384, 32768, 2145, 12288, 192, 192]
+            k_dims = [1024, 2048, 4096, 8192, 16384, 32768, 1024, 12288, 192, 768]
+        else:
+            m_dims = [1024, 2048, 4096, 8192, 16384, 1024, 6144, 802816, 802816] 
+            n_dims = [1024, 2048, 4096, 8192, 16384, 2145, 12288, 192, 192]
+            k_dims = [1024, 2048, 4096, 8192, 16384, 1024, 12288, 192, 768]  
 
         os.chdir(self.bindir)
-        
         buffer = []
-        
-        
+          
         for i in range(len(m_dims)):
             results = subprocess.run(
                 [
