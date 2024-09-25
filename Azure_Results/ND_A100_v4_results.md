@@ -1,4 +1,4 @@
-# Azure ND H100 v5 Benchmark Results
+# Azure ND A100 v4 Benchmark Results
 
 ## System Specifications
 
