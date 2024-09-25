@@ -89,6 +89,7 @@ class NCCLBandwidth:
         
         
         self.buffer=buffer
+        self.save()
         os.chdir(current)
 
     def plot(self):
