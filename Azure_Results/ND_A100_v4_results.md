@@ -108,27 +108,27 @@ The values (in GB/s), in the table 6 and figure 5 below, are the bus bandwidth v
 
 ### Mistral (7B) 
 
-Performance results for Mistral (7B) ran with input length 128 and output Length 8.
+Performance results for Mistral (7B) ran with input length 128, output Length 8 and datatype float16
 
 |                   | Batch Size | ND A100 V4 |  
 | ----------------- | ---------- | ---------- |  
-| Tokens per second | 64         |     |  
+| Tokens per second | 64         |   858.61   |  
 
 ### LLAMA 3 (8B) 
 
-Performance results for LLAMA 3 (8B) with input Length 128 and output length 8.
+Performance results for LLAMA 3 (8B) with input Length 128, output length 8 and datatype float16
 
 |                   | Batch Size | ND A100 V4 |  
 | ----------------- | ---------- | ---------- |  
-| Tokens per second | 64         |    |  
+| Tokens per second | 64         |   828.11  |  
 
 ### LLAMA 3 (70B) 
 
-Performance results for LLAMA 3 (70B) with world size 8, input length 128, and output length 8.
+Performance results for LLAMA 3 (70B) with world size 8, input length 128, output length 8 and datatype float16
 
 |                   | Batch Size | ND A100 V4 | 
 | ----------------- | ---------- | ---------- | 
-| Tokens per second | 16         |      |  
-| Tokens per second | 32         |      | 
-| Tokens per second | 64         |     |   
+| Tokens per second | 16         |    298.99    |  
+| Tokens per second | 32         |     416.85   | 
+| Tokens per second | 64         |    492.29    |   
 
