@@ -108,7 +108,7 @@ The values (in GB/s), in the table 6 and figure 5 below, are the bus bandwidth v
 
 ### Mistral (7B) 
 
-Performance results for Mistral (7B) ran with input length 128 and output Length 128.
+Performance results for Mistral (7B) ran with input length 128 and output Length 8.
 
 |                   | Batch Size | ND A100 V4 |  
 | ----------------- | ---------- | ---------- |  
@@ -116,7 +116,7 @@ Performance results for Mistral (7B) ran with input length 128 and output Length
 
 ### LLAMA 3 (8B) 
 
-Performance results for LLAMA 3 (8B) with input Length 128 and output length 128.
+Performance results for LLAMA 3 (8B) with input Length 128 and output length 8.
 
 |                   | Batch Size | ND A100 V4 |  
 | ----------------- | ---------- | ---------- |  
@@ -124,7 +124,7 @@ Performance results for LLAMA 3 (8B) with input Length 128 and output length 128
 
 ### LLAMA 3 (70B) 
 
-Performance results for LLAMA 3 (70B) with world size 8, input length 128, and output length 128.
+Performance results for LLAMA 3 (70B) with world size 8, input length 128, and output length 8.
 
 |                   | Batch Size | ND A100 V4 | 
 | ----------------- | ---------- | ---------- | 
