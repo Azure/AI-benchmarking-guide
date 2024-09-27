@@ -182,23 +182,25 @@ class LLMBenchmark:
 
                         # Build Engines
                         print(f"Building Engine for {model_name} , TP size:{tp_size}")
-                        build_engine_command = f'''
-                            trtllm-build \
-                            --checkpoint_dir {self.dir_path}/checkpoints/{model_name}/tp_{tp_size}/{self.precision}\
-                            --output_dir {self.dir_path}/engines/{model_name}/tp_{tp_size}/{self.precision} \
-                            --workers {tp_size} \
-                            --gemm_plugin auto
-                        '''
-                        # build_engine_command = f'''
-                        #     trtllm-build \
-                        #     --checkpoint_dir {self.dir_path}/checkpoints/{model_name}/tp_{tp_size}/{self.precision}\
-                        #     --output_dir {self.dir_path}/engines/{model_name}/tp_{tp_size}/{self.precision} \
-                        #     --max_num_tokens 4096 \
-                        #     --max_input_len 64000 \
-                        #     --max_seq_len 65000 \
-                        #     --use_paged_context_fmha enable \
-                        #     --workers 8 
-                        # '''
+                        if "405" not in model_name:
+                            build_engine_command = f'''
+                                trtllm-build \
+                                --checkpoint_dir {self.dir_path}/checkpoints/{model_name}/tp_{tp_size}/{self.precision}\
+                                --output_dir {self.dir_path}/engines/{model_name}/tp_{tp_size}/{self.precision} \
+                                --workers {tp_size} \
+                                --gemm_plugin auto
+                            '''
+                        else:
+                            build_engine_command = f'''
+                                trtllm-build \
+                                --checkpoint_dir {self.dir_path}/checkpoints/{model_name}/tp_{tp_size}/{self.precision}\
+                                --output_dir {self.dir_path}/engines/{model_name}/tp_{tp_size}/{self.precision} \
+                                --max_num_tokens 8192 \
+                                --max_input_len 133000 \
+                                --max_seq_len  133000\
+                                --use_paged_context_fmha enable \
+                                --workers 8 
+                            '''
 
                         be2 = self.container.exec_run(build_engine_command)
                         if be2.exit_code != 0:
