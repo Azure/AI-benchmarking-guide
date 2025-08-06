@@ -27,5 +27,8 @@ class FlashAttention:
         table = PrettyTable(["causal", "headdim", "Flash2 total (TFLOPs)", "Pytorch total (TFLOPs)"])
         for m in re.findall(r"causal=(\w+), headdim=(\d+).*?fwd \+ bwd: ([\d.]+).*?fwd \+ bwd: ([\d.]+)", results.stdout.decode('utf-8'), re.DOTALL):
             table.add_row([m[0], int(m[1]), float(m[2]), float(m[3])])
+            if "True" in str(m[0]) and int(m[1]) == 128:
+                entry = tools.create_bm_entry("batch_size 2 x seq_len 8192", self.name, self.machine_name, str(m[2]))
+                print(entry)
         print(table)
         tools.export_markdown("Flash Attention 2", "The performance (in TFLOPS), in table below, represents the performance for a batch size of 2, and a sequence length of 8192.", table)
