@@ -78,6 +78,7 @@ class GEMMHipBLAS:
                     k = l[6]
                     tflops = float(l[-3])/1000
                     table1.add_row([m,n,k,tflops])
+                    print(tools.create_bm_entry(m+"x"+n+"x"+k, self.name, self.machine_name, tflops))
 
         print(table1)
         tools.export_markdown("GEMM HipBLASLt", "The results shown below are with random initialization (best representation of real-life workloads) " + self.datatype +  ", and " + str(self.w) + " warmup iterations.", table1)
