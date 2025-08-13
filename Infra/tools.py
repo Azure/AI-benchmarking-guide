@@ -55,38 +55,41 @@ def export_markdown(title, description, table = None):
         file.write("\n\n")
         
 def create_bm_entry(bmName, appName, sku, result):
-    id = datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
-    date = datetime.datetime.now().strftime("%Y-%m-%d")
-    ubuntu = get_os_version()
-    return {
-        "jobId": id,
-        "appName": appName,
-        "bmName": bmName,
-        "nodes": "1",
-        "cores": "",
-        "sockets": "",
-        "result": result,
-        "totalRunTime": "",
-        "skuGen": "",
-        "sku": sku,
-        "os": ubuntu,
-        "BIOS": "",
-        "user": "azureuser",
-        "runCategory": "best",
-        "Run Date": "",
-        "notes": "",
-        "appVersion": "string"
-    }
+    if os.getenv("BM_UPLOAD") == "1":    
+        id = datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
+        date = datetime.datetime.now().strftime("%Y-%m-%d")
+        ubuntu = get_os_version()
+        return {
+            "jobId": id,
+            "appName": appName,
+            "bmName": bmName,
+            "nodes": "1",
+            "cores": "",
+            "sockets": "",
+            "result": result,
+            "totalRunTime": "",
+            "skuGen": "",
+            "sku": sku,
+            "os": ubuntu,
+            "BIOS": "",
+            "user": "azureuser",
+            "runCategory": "best",
+            "Run Date": "",
+            "notes": "",
+            "appVersion": "string"
+        }
+    return None   
 
 def post_benchmark_entry(entry, url):
-    json_data = json.dumps(entry)
-    curl_command = [
-        "curl",
-        "-X", "POST",
-        url,
-        "-H", "Content-Type: application/json",
-        "-d", json_data
-    ]
-    
-    result = subprocess.run(curl_command, capture_output=True, text=True)
-    return result.stdout, result.stderr
+    if os.getenv("BM_UPLOAD") == "1":
+        json_data = json.dumps(entry)
+        curl_command = [
+            "curl",
+            "-X", "POST",
+            url,
+            "-H", "Content-Type: application/json",
+            "-d", json_data
+        ]
+        
+        result = subprocess.run(curl_command, capture_output=True, text=True)
+        return result.stdout, result.stderr
