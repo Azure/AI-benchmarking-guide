@@ -10,7 +10,6 @@ class NCCLBandwidth:
     def __init__(self, path:str, machine: str):
         self.name='NCCLBandwidth'
         self.machine_name = machine
-        config = self.get_config(path)
         self.buffer = []
         self.algo = "NVLS"
 
