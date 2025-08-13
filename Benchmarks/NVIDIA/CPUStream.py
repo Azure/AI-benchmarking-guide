@@ -11,9 +11,7 @@ class CPUStream:
     def __init__(self, path:str, machine: str):
         self.name = "CPUStream"
         self.machine_name = machine
-        
         self.num_runs, self.interval = 4, 4
-
         self.buffer = []
 
     def get_config(self, path: str):
@@ -128,3 +126,9 @@ class CPUStream:
         table1.add_row(dot)
         print(table1)
         tools.export_markdown("CPU STREAM", "CPU STREAM Results", table1)
+
+        tools.post_benchmark_entry(tools.create_bm_entry("Copy", self.name, self.machine_name, copy[-1]))
+        tools.post_benchmark_entry(tools.create_bm_entry("Mul", self.name, self.machine_name, mul[-1]))
+        tools.post_benchmark_entry(tools.create_bm_entry("Add", self.name, self.machine_name, add[-1]))
+        tools.post_benchmark_entry(tools.create_bm_entry("Triad", self.name, self.machine_name, triad[-1]))
+        tools.post_benchmark_entry(tools.create_bm_entry("Dot", self.name, self.machine_name, dot[-1]))
