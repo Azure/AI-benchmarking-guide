@@ -80,8 +80,9 @@ def create_bm_entry(bmName, appName, sku, result):
         }
     return None   
 
-def post_benchmark_entry(entry, url):
+def post_benchmark_entry(entry):
     if os.getenv("BM_UPLOAD") == "1":
+        url = ""
         json_data = json.dumps(entry)
         curl_command = [
             "curl",
