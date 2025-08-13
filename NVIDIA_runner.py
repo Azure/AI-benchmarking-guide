@@ -180,5 +180,7 @@ if ("all" in arguments):
     run_LLAMA3Pretrain("8b")
     os.chdir(current)
     run_LLAMA3Pretrain("3b")
+
+os.environ["BM_UPLOAD"] = "0"
 if not match:
     print("Usage: python3 NVIDIA_runner.py [arg]\n   or: python3 NVIDIA_runner.py [arg1] [arg2] ... to run more than one test e.g python3 NVIDIA_runner.py hbm nccl\nArguments are as follows, and are case insensitive:\nAll tests:  all\nCuBLASLt GEMM:  gemm\nNCCL Bandwidth: nccl\nHBMBandwidth:   hbm\nNV Bandwidth:   nv\nFIO Tests:   fio\nFlash Attention: fa\n   LLM Inference Workloads: llm\nCPU Stream: cpustream\nMultichase:  multichase\nLLAMA 8B Pretrain:  llama_8b_pretrain\nLLAMA 3B Pretrain: llama_3b_pretrain")
