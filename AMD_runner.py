@@ -115,6 +115,8 @@ if ("all" in arguments):
     run_FlashAttention()
     run_LLMBenchmark()
     run_GEMMHipBLAS()
+
+os.environ["BM_UPLOAD"] = "0"
 if not match:
     print("Usage: python3 AMD_runner.py [arg]\n   or: python3 AMD_runner.py [arg1] [arg2] ... to run more than one test e.g python3 AMD_runner.py hbm nccl\nArguments are as follows, and are case insensitive:\nAll tests:  all\nROCBLAS GEMM:  gemm\nRCCL Bandwidth: rccl\nHBMBandwidth:   hbm\nTransferbench:   transfer\nFlash Attention: fa\nFIO Tests:   fio\nLLM Inference Workloads: llm")
     
