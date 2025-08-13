@@ -31,7 +31,7 @@ class FIO:
             )
             res = results.stdout.decode('utf-8').split()[2].strip(",()")
             table.add_row([test[0], test[1], res])
-            res = test[0] + " BS=" + test[1] + ": " + res
+            tools.post_benchmark_entry(tools.create_bm_entry(test[0] + "_" + test[1], self.name, self.machine_name, res))
         print(table)
         tools.export_markdown("FIO Tests", "", table)
            
