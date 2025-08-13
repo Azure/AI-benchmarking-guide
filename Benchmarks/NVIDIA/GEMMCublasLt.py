@@ -122,6 +122,7 @@ class GEMMCublastLt:
         table1.field_names = ["M", "N", "K", "Batch Size", "Time(us)", "TFLOPS"]
         for item in buffer:
             table1.add_row(item)
+            tools.post_benchmark_entry(tools.create_bm_entry(item[0]+"x"+item[1]+"x"+item[2], self.name, self.machine_name, items[-1]))
         print(table1)
         tools.export_markdown("GEMM CuBLASLt", "The results shown below are with random initialization (best representation of real-life workloads) " + self.datatype +  ", and " + str(self.w) + " warmup iterations.", table1)
         os.chdir(current)
