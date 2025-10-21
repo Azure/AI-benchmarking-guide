@@ -2,7 +2,7 @@ packaging==24.2
 psutil===7.0.0
 setuptools==79.0.1
 wheel
-torch==2.7.0
+torch==2.7.1+rocm6.2.4
 torchvision==0.22.0
 click==8.2.1
 pydantic
