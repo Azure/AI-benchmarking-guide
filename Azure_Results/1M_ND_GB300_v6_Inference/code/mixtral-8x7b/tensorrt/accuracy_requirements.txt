@@ -1,4 +1,4 @@
-transformers==4.33.2
+transformers==5.0.0rc3
 nltk==3.8.1
 evaluate==0.4.0
 absl-py==1.4.0
