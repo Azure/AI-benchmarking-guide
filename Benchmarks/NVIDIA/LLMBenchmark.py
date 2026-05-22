@@ -109,7 +109,7 @@ class LLMBenchmark:
                         --model {model_name} throughput\
                         --dataset {dataset_path} \
                         --engine_dir {self.dir_path + "/engines/" + model_name + "/tp_" + str(tp) + "_pp_1"} > {results_path} \
-                        --kv_cache_free_gpu_mem_fraction 0.83
+                        --kv_cache_free_gpu_mem_fraction 0.80
                         '''
 
                     be2 = subprocess.run(run_benchmark_command, shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
