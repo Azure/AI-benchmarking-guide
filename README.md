@@ -102,7 +102,6 @@ huggingface-cli login
 Usage: `python3 NVIDIA_runner.py [arg]`\
    or: `python3 NVIDIA_runner.py [arg1] [arg2]` ... to run more than one test e.g `python3 NVIDIA_runner.py hbm nccl`\
 Arguments are as follows, and are case insensitive:\
-All tests:   `all`\
 CuBLASLt GEMM:   `gemm`\
 NCCL Bandwidth:  `nccl`\
 HBMBandwidth:    `hbm`\
@@ -119,7 +118,6 @@ LLAMA3 3B Pretrain Workload: `llama_3b_pretrain`
 Usage: `python3 AMD_runner.py [arg]`\
    or: `python3 AMD_runner.py [arg1] [arg2]` ... to run more than one test e.g `python3 AMD_runner.py hbm nccl`\
 Arguments are as follows, and are case insensitive:\
-All tests:  `all`\
 HipBLAS GEMM:  `gemm`\
 RCCL Bandwidth: `rccl`\
 HBMBandwidth:   `hbm`\
