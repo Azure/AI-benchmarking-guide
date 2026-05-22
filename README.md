@@ -86,7 +86,24 @@ A convenience script `install-dependencies.sh` is provided to simplify installat
 ./install-dependencies.sh 
 ```
 
-If you wish to run LLM benchmarks, make sure to correctly set the huggingface home directory. This is where the model weights will be downloaded:
+## Running LLM Benchmarks:
+
+### NVIDIA Platforms
+
+From the AI-benchmarking-guide directory, pull the TensorRT-LLM container from NVIDIA's registry
+
+```bash
+docker pull nvcr.io/nvidia/tensorrt-llm/release:1.3.0rc14
+ 
+docker run --rm -it --ipc host --gpus all \
+  --ulimit memlock=-1 --ulimit stack=67108864 \
+  -v $PWD:$PWD \
+  -w $PWD \
+  nvcr.io/nvidia/tensorrt-llm/release:1.3.0rc14
+ 
+```
+
+Make sure to correctly set the huggingface home directory. This is where the model weights will be downloaded:
 
 ```
 export HF_HOME=$PWD
