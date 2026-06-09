@@ -80,7 +80,7 @@ class CPUStream:
                 "OMP_NUM_THREADS=128 OMP_PROC_BIND=spread taskset -c 0-127 ./omp-stream", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
             )
             tools.write_log(tools.check_error(results))
-            log = results.stdout.decode("utf-8").strip().split("\n")[10:15]
+            log = results.stdout.decode("utf-8").strip().split("\n")[9:15]
             for i in range(len(log)):
                 temp = log[i].split()
                 log[i] = [temp[0], temp[1]]
