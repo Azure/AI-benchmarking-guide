@@ -1,6 +1,6 @@
 # create onnx model
 diffusers==0.30.3
-transformers==4.45.2
+transformers==5.0.0rc3
 accelerate==1.0.1
 
 # quantization
