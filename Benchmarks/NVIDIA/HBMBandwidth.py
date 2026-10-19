@@ -18,12 +18,7 @@ class HBMBandwidth:
         path = "BabelStream"
         isdir = os.path.isdir(path)
         if not isdir:
-            results = subprocess.run(
-                ["git", "clone", "https://github.com/gitaumark/BabelStream",  path],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-            tools.write_log(tools.check_error(results))
+            results = tools.run_command(['git', 'clone', 'https://github.com/gitaumark/BabelStream', path])
 
         build_path = os.path.join(current, "BabelStream")
         os.chdir(build_path)
@@ -38,40 +33,22 @@ class HBMBandwidth:
         if not os.path.isdir(babelstream_build_path):
             os.mkdir(babelstream_build_path)
             os.chdir(babelstream_build_path)
-            results = subprocess.run(
-                [
-                    "cmake",
-                    "../",
-                    "-DMODEL=cuda",
-                    "-DCUDA_ARCH=" + arch,
-                    "-DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc",
-                ],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-            tools.write_log(tools.check_error(results))
+            results = tools.run_command(['cmake', '../', '-DMODEL=cuda', '-DCUDA_ARCH=' + arch, '-DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc'])
 
-            results = subprocess.run(
-                ["make"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
-            )
-            tools.write_log(tools.check_error(results))
+            results = tools.run_command(['make'])
         else:
             os.chdir(babelstream_build_path)
 
     def run(self):
         current = os.getcwd()
-        print("Running HBM Bandwidth...")
+        tools.progress("Running HBM Bandwidth Test...")
         runs_executed = 0
         buffer = []
         while runs_executed < self.num_runs:
-            results = subprocess.run(
+            results = tools.run_command(
                 ["./cuda-stream"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
             )
-            tools.write_log(tools.check_error(results))
-            log = results.stdout.decode("utf-8").strip().split("\n")[14:19]
-            for i in range(len(log)):
-                temp = log[i].split()
-                log[i] = [temp[0], temp[1]]
+            log = tools.parse_stream_measurements(results.stdout.decode("utf-8"))
             buffer.append(log)
             runs_executed += 1
             time.sleep(int(self.interval))
@@ -111,5 +88,5 @@ class HBMBandwidth:
         table1.add_row(add)
         table1.add_row(triad)
         table1.add_row(dot)
-        print(table1)
+        tools.detail(table1)
         tools.export_markdown("HBM Bandwidth", "HBM bandwidth Results", table1)

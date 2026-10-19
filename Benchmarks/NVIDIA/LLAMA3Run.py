@@ -1,30 +1,38 @@
-import os
 import re
-import json
 import subprocess
+from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 from Infra import tools
 from prettytable import PrettyTable
 from datetime import datetime
+from uuid import uuid4
+
+def detect_steady_state(values, window_size=10, std_thresh=0.1, min_windows=3):
+    consistent = 0
+    for i in range(len(values) - window_size + 1):
+        if np.std(values[i:i + window_size]) < std_thresh:
+            consistent += 1
+            if consistent >= min_windows:
+                start_idx = i - (min_windows - 1)
+                return start_idx, float(np.mean(values[start_idx:]))
+        else:
+            consistent = 0
+    return None, None
 
 class LLAMA3Pretraining:
     def __init__(self, config_path: str, machine_name: str, model_size: str = "8b"):
         self.name = "LLAMA3Pretraining"
         self.machine_name = machine_name
         self.config = self.get_config(config_path) # get config path from JSON
-        self.mount_path = self.config.get("mount_path", ".") # mount docker container
+        self.mount_path = str(Path(self.config.get("mount_path", ".")).resolve())
+        self.training_machine = tools.get_pretraining_machine(machine_name)
         self.training_script = self.config.get("training_script", "Training/LLAMA3Recipe.py")
         self.container = self.config.get("docker_image", "nvcr.io/nvidia/nemo:25.04")
         self.model_size = model_size
 
     def get_config(self, path: str):
-        with open(path) as f:
-            data = json.load(f)
-        try:
-            return data[self.name]
-        except KeyError:
-            raise KeyError(f"{self.name} section not found in config")
+        return tools.load_config(path, self.name)
 
     def plot_results(self, file_path: str = None):
         # extract values from the output file
@@ -37,26 +45,11 @@ class LLAMA3Pretraining:
                     train_losses.append(float(match.group(2)))
                     train_times.append(float(match.group(3)))
 
-        # calculate steady state time value
-        def detect_steady(arr, window_size=10, std_thresh=0.1, min_windows=3):
-            consistent = 0
-            start_idx = None
-            for i in range(len(arr) - window_size + 1):
-                window = arr[i:i + window_size]
-                if np.std(window) < std_thresh:
-                    consistent += 1
-                    if consistent >= min_windows:
-                        start_idx = i - (min_windows - 1) * window_size
-                        break
-                else:
-                    consistent = 0
-            if start_idx is None:
-                return None, None
-            steady = np.mean(arr[start_idx:])
-            return start_idx, steady
+        if not global_steps:
+            raise tools.runtime.OutputError(f"No training measurements found in {file_path}")
 
-        time_idx, time_ss = detect_steady(train_times, std_thresh=1)
-        loss_idx, loss_ss = detect_steady(train_losses, std_thresh=0.1)
+        time_idx, time_ss = detect_steady_state(train_times, std_thresh=1)
+        loss_idx, loss_ss = detect_steady_state(train_losses, std_thresh=0.1)
 
         if time_ss is not None:
             tools.write_log(f"Time steady-state: {time_ss:.4f}s starting at step {global_steps[time_idx]}")
@@ -95,9 +88,9 @@ class LLAMA3Pretraining:
         fig.text(0.5, 0.01, ";  ".join(annot), ha='center', fontsize=12, style='italic')
 
         # save to outputs folder
-        plot_path = f"Outputs/LLAMA3_{self.model_size}_Pretrain_Results"
+        plot_path = tools.get_output_dir() / f"LLAMA3_{self.model_size}_Pretrain_Results.png"
         plt.savefig(plot_path, dpi=300)
-        print(f"Training loss and time plot with steady state saved to {plot_path}")
+        tools.progress(f"Training loss and time plot with steady state saved to {plot_path}")
         tools.write_log(f"Training loss and time plot with steady state saved to {plot_path}") # print to log.txt
         plt.close()
 
@@ -105,35 +98,39 @@ class LLAMA3Pretraining:
 
 
     def run(self):
-        log_path = f"Outputs/log.txt" # log to log file
+        log_dir = tools.get_output_dir()
+        log_path = log_dir / f"LLAMA3_{self.model_size}_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}.log"
         tools.write_log(f"Pulling and launching NeMo container for {self.machine_name}.") # write to log file
-        print(f"Pulling and launching NeMo docker container for {self.machine_name} and logging at 'Outputs/log.txt'.") # also let the user know where log is
+        tools.progress(f"Pulling and launching NeMo docker container for {self.machine_name} and logging at '{log_path}'.")
 
         if self.model_size == "3b":
             time = 2
         else:
             time = 4
 
-        tools.write_log(f"Pretraining will finish in {time} hours.")
-        print(f"Pretraining will finish in {time} hours.")
+        tools.progress(f"Configured pretraining duration: up to {time} hours.")
 
+        container_name = "ai-pretrain-" + uuid4().hex
         command = [
-            "sudo", "docker", "run", "--rm", "-i",
+            "docker", "run", "--rm", "--name", container_name,
             "--gpus", "all",
             "--ipc=host",
             "--ulimit", "memlock=-1",
             "--ulimit", "stack=67108864",
             "-v", f"{self.mount_path}:/workspace/nemo-run",
+            "-v", f"{log_dir}:{log_dir}",
+            "-w", "/workspace/nemo-run",
             self.container,
-            "bash", "-c", f"cd /workspace/nemo-run && python {self.training_script} --model_size {self.model_size} --machine_name {self.machine_name.split()[-1]}"
+            "python", self.training_script, "--model_size", self.model_size,
+            "--machine_name", self.training_machine
         ]
 
         # launch command and write to log file (this shows all info about epoch, training time, etc.)
-        with open("Outputs/log.txt", "w") as file:
-            subprocess.run(command, stdout=file, stderr=subprocess.STDOUT, text=True)
+        with tools.runtime.docker_run_cleanup(container_name), open(log_path, "x") as file:
+            tools.run_command(command, stdout=file, stderr=subprocess.STDOUT, text=True, check=True)
 
         # now plot the results
-        print(f"Pretraining has finished with output saved to: {log_path}. Now plotting.")
+        tools.progress(f"Pretraining has finished with output saved to: {log_path}. Now plotting.")
         time_ss = self.plot_results(log_path)
 
         # add summary to markdown

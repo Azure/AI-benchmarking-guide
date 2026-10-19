@@ -14,24 +14,22 @@ class NVBandwidth:
         path ='nvbandwidth'
         isdir = os.path.isdir(path)
         if not isdir:
-            results = subprocess.run(['git', 'clone', 'https://github.com/NVIDIA/nvbandwidth', path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            results = tools.run_command(['git', 'clone', 'https://github.com/NVIDIA/nvbandwidth', path])
         build_path = os.path.join(current, 'nvbandwidth')
         os.chdir(build_path)
-        results = subprocess.run(['sed', '-i', '2i\set(CMAKE_CUDA_COMPILER /usr/local/cuda/bin/nvcc)', 'CMakeLists.txt'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        results = tools.run_command(['sed', '-i', '2i\\set(CMAKE_CUDA_COMPILER /usr/local/cuda/bin/nvcc)', 'CMakeLists.txt'])
 
         if os.path.exists("/.dockerenv"):
-            results = subprocess.run('apt update && ./debian_install.sh', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            results = tools.run_command('apt update && ./debian_install.sh', shell=True)
         else:
-            results = subprocess.run('sudo apt update && sudo ./debian_install.sh', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        tools.write_log(tools.check_error(results))
+            results = tools.run_command('sudo apt update && sudo ./debian_install.sh', shell=True)
         os.chdir(current)
 
     def run(self):
         current = os.getcwd()
         os.chdir(os.path.join(current, 'nvbandwidth'))
-        print("Running NVBandwidth...")
-        results = subprocess.run('./nvbandwidth -t device_to_host_memcpy_ce host_to_device_memcpy_ce device_to_device_bidirectional_memcpy_read_ce', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        tools.write_log(tools.check_error(results))
+        tools.progress("Running NVBandwidth...")
+        results = tools.run_command('./nvbandwidth -t device_to_host_memcpy_ce host_to_device_memcpy_ce device_to_device_bidirectional_memcpy_read_ce', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         log = results.stdout.decode('utf-8')
         os.chdir(current)
 
@@ -53,6 +51,8 @@ class NVBandwidth:
             current.append([int(float(x)) if x.replace('.', '', 1).isdigit() else "-" for x in row])
         if current:
             tables.append(current)
+        if len(tables) < 5 or any(len(tables[i]) < 2 for i in (0, 1, 4)):
+            raise tools.runtime.OutputError("NVBandwidth returned incomplete transfer matrices")
         result = [tables[0], tables[1], tables[4]]
         labels = ["Device to Host memcpy", "Host to Device memcpy", "Device to Device Bidirectional memcpy Total"]
         for i in range(len(result)):
@@ -60,8 +60,8 @@ class NVBandwidth:
             t = PrettyTable(result[i][0])
             for j in range(1, len(result[i])):
                 t.add_row(result[i][j])
-            print(labels[i])
-            print(t)
+            tools.progress(labels[i])
+            tools.detail(t)
 
             if i == 0:
                 tools.export_markdown("NV Bandwidth", labels[i], t)
