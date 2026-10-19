@@ -1,9 +1,7 @@
-import json
 import os
 import statistics
 import subprocess
 import time
-import csv
 from Infra import tools
 from prettytable import PrettyTable
 
@@ -16,33 +14,13 @@ class CPUStream:
 
         self.buffer = []
 
-    def get_config(self, path: str):
-        file = open(path)
-        data = json.load(file)
-        file.close()
-        try:
-            return data[self.name]
-        except KeyError:
-            raise KeyError("no value found")
-
-    def parse_json(self, config):
-        return config["inputs"]["num_runs"], config["inputs"]["interval"]
-
-    def config_conversion(self, config) -> tuple[list, list, list]:
-        return self.parse_json(config)
-
     def build(self):
         current = os.getcwd()
 
         path = "CPUStream"
         isdir = os.path.isdir(path)
         if not isdir:
-            results = subprocess.run(
-                ["git", "clone", "https://github.com/UoB-HPC/BabelStream",  path],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-            tools.write_log(tools.check_error(results))
+            results = tools.run_command(['git', 'clone', 'https://github.com/UoB-HPC/BabelStream', path])
 
         build_path = os.path.join(current, "CPUStream")
         os.chdir(build_path)
@@ -53,44 +31,29 @@ class CPUStream:
         if not os.path.isdir(babelstream_build_path):
             os.mkdir(babelstream_build_path)
             os.chdir(babelstream_build_path)
-            results = subprocess.run(
-                "cmake -DMODEL=omp ..",
-                shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-            tools.write_log(tools.check_error(results))
+            results = tools.run_command('cmake -DMODEL=omp ..', shell=True)
            
-            results = subprocess.run(
-                ["make"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
-            )
-            tools.write_log(tools.check_error(results))
+            results = tools.run_command(['make'])
         else:
             os.chdir(babelstream_build_path)
 
 
     def run(self):
-        current = os.getcwd()
-        print("Running CPU Stream...")
+        tools.progress("Running CPU Stream...")
 
         runs_executed = 0
         buffer = []
         while runs_executed < self.num_runs:
-            results = subprocess.run(
+            results = tools.run_command(
                 "OMP_NUM_THREADS=128 OMP_PROC_BIND=spread taskset -c 0-127 ./omp-stream", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
             )
-            tools.write_log(tools.check_error(results))
-            log = results.stdout.decode("utf-8").strip().split("\n")[9:15]
-            for i in range(len(log)):
-                temp = log[i].split()
-                log[i] = [temp[0], temp[1]]
+            log = tools.parse_stream_measurements(results.stdout.decode("utf-8"))
             buffer.append(log)
             runs_executed += 1
             time.sleep(int(self.interval))
 
     
         self.buffer = buffer
-        os.chdir(current)
         self.save_results()
 
     def process_stats(self, results):
@@ -126,5 +89,5 @@ class CPUStream:
         table1.add_row(add)
         table1.add_row(triad)
         table1.add_row(dot)
-        print(table1)
+        tools.detail(table1)
         tools.export_markdown("CPU STREAM", "CPU STREAM Results", table1)

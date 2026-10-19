@@ -23,6 +23,7 @@ if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
 fi
 
 pip=${1:-'python3 -m pip'}
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
 
 # Determine GPU platform
 if command -v rocminfo &> /dev/null && rocminfo &> /dev/null; then
@@ -63,10 +64,9 @@ clone_repo() {
 
 # Install dependencies based on GPU platform
 if [[ "$platform" == "AMD" ]]; then
-    $pip install -r requirements_torch_amd.txt
-    # Cannot install from requirements_torch_amd because these packages are not availabile in
-    # the index-url required for ROCm torch libs.  Installing here to maintain same grouping.
-    $pip install ninja packaging psutil setuptools wheel
+    $pip install -r requirements/torch-amd.txt
+    # Keep the ROCm-only index separate from common PyPI dependencies.
+    $pip install -r requirements/common.txt -r requirements/build.txt
 
     echo "Building FlashAttention for AMD/ROCm"
     clone_repo "https://github.com/triton-lang/triton" "triton" "3ca2f498e98ed7249b82722587c511a5610e00c4"
@@ -75,24 +75,24 @@ if [[ "$platform" == "AMD" ]]; then
     popd > /dev/null
 
     export FLASH_ATTENTION_TRITON_AMD_ENABLE="TRUE"
-    clone_repo "https://github.com/Dao-AILab/flash-attention.git" "flash-attention"
+    clone_repo "https://github.com/Dao-AILab/flash-attention.git" "flash-attention" "418d677"
     pushd flash-attention > /dev/null
-    python3 setup.py install
+    $pip install . --no-build-isolation --no-deps
     popd > /dev/null
 
-    $pip install $(grep -v tensorrt requirements_main.txt)
 
 elif [[ "$platform" == "NVIDIA" ]]; then
     gpu_output=$(nvidia-smi --query-gpu=gpu_name --format=csv,noheader)
     if echo "$gpu_output" | grep -q "GB"; then
-        # only install GB200 & GB300 requirements
-        $pip install torch prettytable cmake huggingface_hub numpy matplotlib
+        # Preserve the existing unpinned Blackwell Torch choice.
+        $pip install -r requirements/common.txt -r requirements/torch-blackwell.txt
     else
-        $pip install -r requirements_main.txt
-        $pip install $(cat requirements_flashattn.txt) --no-build-isolation
-        $pip install -r requirements_torch_nvidia.txt  
+        $pip install -r requirements/common.txt -r requirements/torch-nvidia.txt
+        $pip install -r requirements/flashattn.txt --no-build-isolation --no-deps
     fi
 fi
+
+$pip check
 
 # Warn if fio not installed
 if ! command -v fio &> /dev/null; then

@@ -17,25 +17,20 @@ class Multichase:
         path = "multichase"
         isdir = os.path.isdir(path)
         if not isdir:
-            results = subprocess.run(
-                ["git", "clone", "https://github.com/google/multichase",  path],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-            tools.write_log(tools.check_error(results))
+            results = tools.run_command(['git', 'clone', 'https://github.com/google/multichase', path])
 
             build_path = os.path.join(current, "multichase")
             os.chdir(build_path)
             
-            results = subprocess.run("make", shell=True, stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-            tools.write_log(tools.check_error(results))
+            results = tools.run_command('make', shell=True)
             os.chdir(current)
 
     def run(self):
         current = os.getcwd()
-        print("Running Multichase...")
+        tools.progress("Running Multichase...")
 
-        results = subprocess.run("cd Benchmarks/NVIDIA && sudo chmod 777 run_multichase.sh && ./run_multichase.sh",shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        tools.write_log(tools.check_error(results))
-        print(results.stdout.decode("utf-8"))
+        results = tools.run_command(["bash", "run_multichase.sh"], cwd="Benchmarks/NVIDIA", capture_output=True)
+        if not results.stdout.strip():
+            raise tools.runtime.OutputError("Multichase returned no measurements")
+        tools.detail(results.stdout.decode("utf-8"))
         tools.export_markdown("Multichase", results.stdout.decode("utf-8"), None)

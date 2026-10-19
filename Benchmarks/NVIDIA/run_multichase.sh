@@ -1,4 +1,5 @@
-#/bin/bash
+#!/bin/bash
+set -euo pipefail
 printf "%4s %7s %7s\n" "CPU" "NODE0" "NODE1"
  
 for cpu in $(seq 0 64 127)

@@ -75,7 +75,7 @@ python3 -m venv venv && source venv/bin/activate
 
 ### 2. Storage Requirements
 
-- **≥ 5 TB disk** recommended if running LLM benchmarks (model weights are large).
+- **≥ 5 TB disk** recommended **only** if running LLM benchmarks (model weights are large).
 - Some AMD benchmarks use Docker containers (auto-created and killed). To avoid filling your boot disk, redirect Docker's data directory:
 
   ```bash
@@ -116,7 +116,7 @@ huggingface-cli login
 
 ### 4. Run Benchmarks
 
-**NVIDIA** — `python3 NVIDIA_runner.py [arg1] [arg2] ...`
+**NVIDIA** — `python3 NVIDIA_runner.py BENCHMARK [BENCHMARK ...] [OPTIONS]`
 
 | Argument | Test |
 |----------|------|
@@ -132,7 +132,7 @@ huggingface-cli login
 | `llama_8b_pretrain` | Llama 3 8B Pretrain |
 | `llama_3b_pretrain` | Llama 3 3B Pretrain |
 
-**AMD** — `python3 AMD_runner.py [arg1] [arg2] ...`
+**AMD** — `python3 AMD_runner.py BENCHMARK [BENCHMARK ...] [OPTIONS]`
 
 | Argument | Test |
 |----------|------|
@@ -144,6 +144,17 @@ huggingface-cli login
 | `fio` | FIO (Storage I/O) |
 | `llm` | LLM Inference |
 
+Run from the repository root. Pass one or more names, or `all`:
+
+```bash
+python3 NVIDIA_runner.py hbm nccl
+python3 AMD_runner.py hbm transfer
+```
+
+Use `--help` for options. See the
+[Benchmark Execution Guide](docs/benchmark-execution-guide.md) for CLI options,
+logging, output formats, and recovery behavior.
+
 ### Configuration
 
 - **[`config.json`](config.json)** controls LLM benchmark settings (models, input/output sizes, tensor parallelism, precision, pretraining params).
@@ -152,8 +163,7 @@ huggingface-cli login
 
 ### Output
 
-- Results → `Outputs/` directory (markdown files).
-- Logs → `Outputs/log.txt`.
+- Results print in the CLI; exported results and logs are saved under `Outputs/`.
   
 ---
 

@@ -39,7 +39,7 @@ def configure_recipe(cfg, nodes=1, gpus_per_node=4):
         recipe_fn = llm.llama3_8b.pretrain_recipe
 
     recipe = recipe_fn(
-        dir="/checkpoints/llama3_{model_size}",
+        dir=f"/checkpoints/llama3_{model_size}",
         name=f"llama3_{model_size}_pretraining",
         num_nodes=nodes,
         num_gpus_per_node=gpus_per_node,
