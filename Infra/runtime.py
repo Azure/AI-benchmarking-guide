@@ -298,17 +298,23 @@ def run_container_command(container, command, *, timeout=None):
 def start_container(image, **options):
     try:
         import docker
-        from docker.errors import DockerException
+        from docker.errors import DockerException, ImageNotFound
     except ImportError as exc:
         raise PrerequisiteError("Docker SDK is missing; run install-dependencies.sh") from exc
 
-    run_command(["docker", "pull", image])
     name = "ai-benchmark-" + uuid4().hex
     options["name"] = name
     options["auto_remove"] = True
     try:
+        client = docker.from_env(timeout=_timeout or 60)
+        try:
+            client.images.get(image)
+        except ImageNotFound:
+            logger.info("Docker image %s is not available locally; pulling...", image)
+            run_command(["docker", "pull", image])
+        else:
+            logger.info("Using local Docker image %s", image)
         with docker_run_cleanup(name):
-            client = docker.from_env(timeout=_timeout or 60)
             return client.containers.run(image, **options)
     except DockerException as exc:
         raise CommandError(f"Could not start container {image}: {exc}") from exc

@@ -61,7 +61,7 @@ def run_benchmark(platform, name, machine):
             "rccl": ("RCCLBandwidth", "RCCLBandwidth", ["create_container", "build", "run"]),
             "hbm": ("HBMBandwidth", "HBMBandwidth", ["build", "run"]),
             "transfer": ("TransferBench", "TransferBench", ["build", "run"]),
-            "fa": ("FlashAttention", "FlashAttention", ["run"]),
+            "fa": ("FlashAttention", "FlashAttention", ["create_container", "run"]),
             "fio": ("FIO", "FIO", ["run"]),
             "llm": ("LLMBenchmark", "LLMBenchmark", ["create_container", "run_benchmark"]),
         },

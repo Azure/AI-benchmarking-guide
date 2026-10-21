@@ -14,23 +14,9 @@ class GEMMHipBLAS:
         self.container = None
 
     def create_container(self):
-        # Define the Docker run options
-        docker_run_options = {
-            'ipc_mode':'host',
-            'entrypoint': '/bin/bash',
-            'network': 'host',
-            'group_add': ['render'],
-            'privileged': True,
-            'security_opt': ['seccomp=unconfined'],
-            'cap_add': ['CAP_SYS_ADMIN', 'SYS_PTRACE'],
-            'devices': ['/dev/kfd', '/dev/dri', '/dev/mem'],
-            'volumes': tools.container_volumes(self.dir_path),
-            'tty': True,
-            'detach': True
-        }
-        # Creates new Docker container
-        tools.progress("Pulling docker container rocm/vllm-dev:main...")
-        self.container = tools.start_container('rocm/vllm-dev:main', **docker_run_options)
+        docker_run_options = tools.amd_container_options(self.dir_path, entrypoint="/bin/bash")
+        tools.progress(f"Preparing Docker image {tools.AMD_BENCHMARK_IMAGE}...")
+        self.container = tools.start_container(tools.AMD_BENCHMARK_IMAGE, **docker_run_options)
         tools.progress(f"Launched Docker Container ID: {self.container.id}")
 
     def build(self):
@@ -48,10 +34,6 @@ class GEMMHipBLAS:
 
     # run GEMM with predetermined matrix sizes that are commonly used in transformers
     def run_model_sizes(self):
-        with tools.managed_container(self):
-            self._run_model_sizes()
-
-    def _run_model_sizes(self):
         tools.progress("Running HipBLAS...")
         m_dims = [1024, 2048, 4096, 8192, 16384, 32768, 1024, 6144, 802816]
         n_dims = [1024, 2048, 4096, 8192, 16384, 32768, 2145, 12288, 192]
