@@ -162,7 +162,9 @@ class RuntimeTests(unittest.TestCase):
         client = Mock()
         client.containers.run.side_effect = DockerFailure("startup failed")
         docker = SimpleNamespace(from_env=Mock(return_value=client))
-        errors = SimpleNamespace(DockerException=DockerFailure)
+        class ImageNotFound(DockerFailure):
+            pass
+        errors = SimpleNamespace(DockerException=DockerFailure, ImageNotFound=ImageNotFound)
         with patch.dict(sys.modules, {"docker": docker, "docker.errors": errors}), \
                 patch.object(runtime, "run_command", return_value=SimpleNamespace(stdout="id")) as command:
             with self.assertRaisesRegex(runtime.CommandError, "startup failed"):
@@ -171,6 +173,70 @@ class RuntimeTests(unittest.TestCase):
         self.assertTrue(name.startswith("ai-benchmark-"))
         self.assertTrue(client.containers.run.call_args.kwargs["auto_remove"])
         self.assertIn(["docker", "rm", "--force", name], [call.args[0] for call in command.call_args_list])
+
+    def test_container_start_pulls_only_missing_images(self):
+        class DockerFailure(Exception):
+            pass
+
+        class ImageNotFound(DockerFailure):
+            pass
+
+        errors = SimpleNamespace(DockerException=DockerFailure, ImageNotFound=ImageNotFound)
+        for missing in (False, True):
+            with self.subTest(missing=missing):
+                client = Mock()
+                if missing:
+                    client.images.get.side_effect = ImageNotFound("missing")
+                docker = SimpleNamespace(from_env=Mock(return_value=client))
+                with patch.dict(sys.modules, {"docker": docker, "docker.errors": errors}), \
+                        patch.object(runtime, "run_command") as command:
+                    result = runtime.start_container("test-image", detach=True)
+                client.images.get.assert_called_once_with("test-image")
+                self.assertIs(result, client.containers.run.return_value)
+                self.assertTrue(client.containers.run.call_args.kwargs["detach"])
+                if missing:
+                    command.assert_called_once_with(["docker", "pull", "test-image"])
+                else:
+                    command.assert_not_called()
+        self.assertIn("Using local Docker image test-image", self.stderr.getvalue())
+        self.assertIn("not available locally; pulling", self.stderr.getvalue())
+
+    def test_container_image_lookup_failure_does_not_pull_or_start(self):
+        class DockerFailure(Exception):
+            pass
+
+        class ImageNotFound(DockerFailure):
+            pass
+
+        client = Mock()
+        client.images.get.side_effect = DockerFailure("daemon unavailable")
+        docker = SimpleNamespace(from_env=Mock(return_value=client))
+        errors = SimpleNamespace(DockerException=DockerFailure, ImageNotFound=ImageNotFound)
+        with patch.dict(sys.modules, {"docker": docker, "docker.errors": errors}), \
+                patch.object(runtime, "run_command") as command:
+            with self.assertRaisesRegex(runtime.CommandError, "daemon unavailable"):
+                runtime.start_container("test-image")
+        command.assert_not_called()
+        client.containers.run.assert_not_called()
+
+    def test_container_pull_failure_does_not_start(self):
+        class DockerFailure(Exception):
+            pass
+
+        class ImageNotFound(DockerFailure):
+            pass
+
+        client = Mock()
+        client.images.get.side_effect = ImageNotFound("missing")
+        docker = SimpleNamespace(from_env=Mock(return_value=client))
+        errors = SimpleNamespace(DockerException=DockerFailure, ImageNotFound=ImageNotFound)
+        with patch.dict(sys.modules, {"docker": docker, "docker.errors": errors}), \
+                patch.object(runtime, "run_command",
+                             side_effect=runtime.CommandError("pull failed")) as command:
+            with self.assertRaisesRegex(runtime.CommandError, "pull failed"):
+                runtime.start_container("test-image")
+        command.assert_called_once_with(["docker", "pull", "test-image"])
+        client.containers.run.assert_not_called()
 
 
     def test_multichase_script_propagates_failed_probes(self):

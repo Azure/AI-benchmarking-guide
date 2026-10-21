@@ -16,33 +16,14 @@ class LLMBenchmark:
         return tools.load_model_config(path, "amd")
 
     def create_container(self):
-        # Define the Docker run options
-        docker_run_options = {
-            'ipc_mode':'host',
-            'network': 'host',
-            'entrypoint':'/bin/bash',
-            'group_add': ['render'],
-            'privileged': True,
-            'security_opt': ['seccomp=unconfined'],
-            'cap_add': ['CAP_SYS_ADMIN', 'SYS_PTRACE'],
-            'devices': ['/dev/kfd', '/dev/dri', '/dev/mem'],
-            'volumes': tools.container_volumes(self.dir_path),
-            'environment': {'HF_HOME': str(self.dir_path)},
-            'tty': True,
-            'detach': True,
-            'auto_remove': True
-        }
-
-        # Creates new Docker container
-        tools.progress("Pulling docker container rocm/vllm-dev:20241121-tuned")
+        docker_run_options = tools.amd_container_options(
+            self.dir_path, entrypoint="/bin/bash", environment={"HF_HOME": str(self.dir_path)}
+        )
+        tools.progress("Preparing Docker image rocm/vllm-dev:20241121-tuned...")
         self.container = tools.start_container('rocm/vllm-dev:20241121-tuned', **docker_run_options)
         tools.progress(f"Docker Container ID: {self.container.id}")
 
     def run_benchmark(self):
-        with tools.managed_container(self):
-            self._run_models()
-
-    def _run_models(self):
         for model_name in self.config['models']:
             if self.config['models'][model_name]['use_model'] and self.config['models'][model_name]['type'] == "amd":
                 self.table = PrettyTable(["input len", "output len", "tp size", "throughput(tokens/s)"])

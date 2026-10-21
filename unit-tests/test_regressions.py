@@ -81,6 +81,148 @@ class RegressionTests(unittest.TestCase):
         patch.object(runtime, "run_command", return_value=SimpleNamespace(stdout="")).start()
         self.addCleanup(patch.stopall)
 
+    def test_transferbench_accepts_ascii_and_unicode_rows(self):
+        module = load_module("Benchmarks/AMD/TransferBench.py")
+        benchmark = module.TransferBench("unused", str(ROOT), "MI300X")
+        for separator in ("|", "\u2502"):
+            with self.subTest(separator=separator):
+                output = "=== TransferBench ===\n"
+                for executor, bandwidth, total in (
+                    (0, "55.506", "55.632"), (0, "56.556", "56.681"),
+                ):
+                    output += (
+                        f"  Executor: GPU {executor:02d} {separator} {bandwidth} GB/s "
+                        f"{separator} 4.836 ms {separator} 268435456 bytes "
+                        f"{separator} {total} GB/s (sum)\n"
+                    )
+                matrix = (
+                    "SRC\\DST,GPU 00,GPU 01,\n"
+                    "GPU 00 ->,N/A,170.123,\n"
+                    "GPU 00 <-,N/A,180.456,\n"
+                    "GPU 00 <->,N/A,350.579,\n"
+                    "GPU 01 <->,351.234,N/A,\n"
+                )
+                self.command.side_effect = [
+                    SimpleNamespace(stdout=output.encode("utf-8")),
+                    SimpleNamespace(stdout=matrix.encode("utf-8")),
+                ]
+                benchmark.run()
+                table = self.export.call_args_list[-2].args[2]
+                self.assertEqual(table.rows, [
+                    ["Host to Device memcpy", "55.506 GB/s"],
+                    ["Device to Host memcpy", "56.556 GB/s"],
+                ])
+                self.assertEqual(self.export.call_args.args[2].rows, [
+                    ["GPU 0", "-", "350.579"], ["GPU 1", "351.234", "-"],
+                ])
+                self.assertEqual(self.command.call_args_list[-2].args[0], [
+                    "sudo", str(ROOT / "TransferBench/build/TransferBench"),
+                    str(ROOT / "Benchmarks/AMD/transferbench.cfg"),
+                ])
+                self.assertNotIn("shell", self.command.call_args.kwargs)
+
+    def test_transferbench_rejects_missing_extra_or_invalid_measurements(self):
+        module = load_module("Benchmarks/AMD/TransferBench.py")
+        benchmark = module.TransferBench("unused", str(ROOT), "MI300X")
+        valid = "Executor: GPU 00 | 55.506 GB/s | 4.836 ms | 55.632 GB/s (sum)\n"
+        outputs = ["", valid, valid * 3, valid * 5, "invalid (sum)\n"]
+        outputs += [
+            valid.replace("55.506 GB/s", value) + valid
+            for value in ("nan GB/s", "inf GB/s", "0 GB/s", "-1 GB/s", "bad GB/s", "55 MB/s")
+        ]
+        for output in outputs:
+            with self.subTest(output=output):
+                self.command.return_value.stdout = output.encode("utf-8")
+                self.export.reset_mock()
+                with self.assertRaises(runtime.OutputError):
+                    benchmark.run()
+                self.export.assert_not_called()
+
+    def test_transferbench_rejects_unexpected_gpu_executors(self):
+        module = load_module("Benchmarks/AMD/TransferBench.py")
+        benchmark = module.TransferBench("unused", str(ROOT), "MI300X")
+        row = "Executor: GPU 00 | 55.506 GB/s | 4.836 ms | 55.632 GB/s (sum)\n"
+        for output in (row + row.replace("GPU 00", "GPU 01"), row.replace("GPU 00", "CPU 00") + row):
+            with self.subTest(output=output):
+                self.command.return_value.stdout = output.encode("utf-8")
+                with self.assertRaises(runtime.OutputError):
+                    benchmark.run()
+                self.export.assert_not_called()
+
+    def test_transferbench_config_keeps_host_tests_separate_from_gpu_matrix(self):
+        config = (ROOT / "Benchmarks/AMD/transferbench.cfg").read_text()
+        transfers = [line.strip() for line in config.splitlines() if line.strip() and not line.startswith("#")]
+        self.assertEqual(transfers, [
+            "1 32 (C0 G0 G0)", "1 32 (G0 G0 C0)",
+        ])
+
+    def test_transferbench_gpu_matrix_covers_all_eight_gpus_and_uses_total_rows(self):
+        module = load_module("Benchmarks/AMD/TransferBench.py")
+        benchmark = module.TransferBench("unused", str(ROOT), "MI300X")
+        output = "SRC\\DST," + ",".join(f"GPU {gpu:02d}" for gpu in range(8)) + ",\n"
+        for gpu in range(8):
+            values = ["N/A" if peer == gpu else f"{100 * gpu + peer + 1:.2f}" for peer in range(8)]
+            output += f"GPU {gpu:02d} ->," + ",".join(["1"] * 8) + ",\n"
+            output += f"GPU {gpu:02d} <->," + ",".join(values) + ",\n"
+        self.command.return_value.stdout = output.encode("utf-8")
+        matrix = benchmark._run_gpu_matrix("/path with spaces/TransferBench")
+        self.assertEqual(matrix.field_names, ["GPU", *[f"GPU {gpu}" for gpu in range(8)]])
+        self.assertEqual(len(matrix.rows), 8)
+        for gpu, row in enumerate(matrix.rows):
+            self.assertEqual(row, [f"GPU {gpu}", *[
+                "-" if peer == gpu else f"{100 * gpu + peer + 1:.2f}" for peer in range(8)
+            ]])
+        self.assertEqual(self.command.call_args.args[0], [
+            "sudo", "env", "-u", "NUM_GPU_DEVICES", "P2P_MODE=2", "NUM_CPU_DEVICES=0",
+            "NUM_GPU_SE=32", "USE_REMOTE_READ=1", "USE_GPU_DMA=0", "USE_GPU_TDM=0",
+            "SHOW_ITERATIONS=0", "OUTPUT_TO_CSV=1", "/path with spaces/TransferBench", "p2p",
+        ])
+
+    def test_transferbench_gpu_matrix_rejects_bad_shapes_and_bandwidths(self):
+        module = load_module("Benchmarks/AMD/TransferBench.py")
+        benchmark = module.TransferBench("unused", str(ROOT), "MI300X")
+        header = "SRC\\DST,GPU 00,GPU 01,\n"
+        first = "GPU 00 <->,N/A,100.00,\n"
+        second = "GPU 01 <->,101.00,N/A,\n"
+        valid = header + first + second
+        invalid = [
+            "", first + second, header + first, valid + first, header + header + first + second,
+            valid.replace("GPU 01,", "GPU 00,", 1),
+            valid.replace("GPU 01 <->", "GPU 02 <->"),
+            valid.replace("N/A,100.00,", "N/A,"),
+            valid.replace("N/A,100.00,", "N/A,100.00,200.00,"),
+            valid.replace("N/A,100.00,", "100.00,100.00,"),
+            "SRC\\DST,GPU 00,\nGPU 00 <->,N/A,\n",
+        ]
+        invalid += [valid.replace("100.00", value) for value in ("nan", "inf", "0", "-1", "bad")]
+        for output in invalid:
+            with self.subTest(output=output):
+                self.command.return_value.stdout = output.encode("utf-8")
+                with self.assertRaises(runtime.OutputError):
+                    benchmark._run_gpu_matrix("TransferBench")
+                self.export.assert_not_called()
+
+    def test_transferbench_gpu_matrix_marks_unavailable_peer_paths_with_warning(self):
+        module = load_module("Benchmarks/AMD/TransferBench.py")
+        benchmark = module.TransferBench("unused", str(ROOT), "MI300X")
+        self.command.return_value.stdout = (
+            b"SRC\\DST,GPU 00,GPU 01,\nGPU 00 <->,N/A,N/A,\nGPU 01 <->,100.00,N/A,\n"
+        )
+        with patch.object(tools.logger, "warning") as warning:
+            matrix = benchmark._run_gpu_matrix("TransferBench")
+        self.assertEqual(matrix.rows[0], ["GPU 0", "-", "-"])
+        warning.assert_called_once_with(
+            "TransferBench peer path unavailable: GPU %s <-> GPU %s", 0, 1,
+        )
+
+    def test_transferbench_propagates_command_failure(self):
+        module = load_module("Benchmarks/AMD/TransferBench.py")
+        benchmark = module.TransferBench("unused", str(ROOT), "MI300X")
+        self.command.side_effect = runtime.CommandError("TransferBench failed")
+        with self.assertRaises(runtime.CommandError):
+            benchmark.run()
+        self.export.assert_not_called()
+
     def test_amd_hbm_uses_fixed_runs_and_delay_without_config(self):
         module = load_module("Benchmarks/AMD/HBMBandwidth.py")
         with patch.object(tools, "load_config", side_effect=AssertionError("HBM must not load config")):
@@ -105,6 +247,143 @@ class RegressionTests(unittest.TestCase):
         module.HBMBandwidth.assert_called_once_with(str(ROOT), "MI300X")
         module.HBMBandwidth.return_value.build.assert_called_once()
         module.HBMBandwidth.return_value.run.assert_called_once()
+
+    def test_amd_container_settings_preserve_benchmark_specific_options(self):
+        cases = (
+            ("GEMMHipblasLt", "GEMMHipBLAS", "rocm/vllm-dev:main"),
+            ("RCCLBandwidth", "RCCLBandwidth", "rocm/vllm-dev:main"),
+            ("FlashAttention", "FlashAttention", "rocm/vllm-dev:main"),
+            ("LLMBenchmark", "LLMBenchmark", "rocm/vllm-dev:20241121-tuned"),
+        )
+        for module_name, class_name, image in cases:
+            with self.subTest(benchmark=class_name):
+                module = load_module(f"Benchmarks/AMD/{module_name}.py")
+                cls = getattr(module, class_name)
+                benchmark = cls(str(ROOT), "MI300X") if class_name == "FlashAttention" else \
+                    cls(str(ROOT / "config.json"), str(ROOT), "MI300X")
+                with patch.object(tools, "get_output_dir", return_value=Path("/results")), \
+                        patch.object(tools, "start_container") as start:
+                    benchmark.create_container()
+                self.assertEqual(start.call_args.args, (image,))
+                options = start.call_args.kwargs
+                self.assertEqual(options["devices"], ["/dev/kfd", "/dev/dri", "/dev/mem"])
+                self.assertEqual(options["group_add"], ["render"])
+                self.assertEqual(options["cap_add"], ["CAP_SYS_ADMIN", "SYS_PTRACE"])
+                self.assertEqual(options["security_opt"], ["seccomp=unconfined"])
+                self.assertEqual(options["ipc_mode"], "host")
+                self.assertEqual(options["network"], "host")
+                for flag in ("privileged", "tty", "detach", "auto_remove"):
+                    self.assertTrue(options[flag])
+                self.assertEqual(options["volumes"], {
+                    str(ROOT): {"bind": str(ROOT), "mode": "rw"},
+                    "/results": {"bind": "/results", "mode": "rw"},
+                })
+                if class_name == "FlashAttention":
+                    self.assertNotIn("entrypoint", options)
+                else:
+                    self.assertEqual(options["entrypoint"], "/bin/bash")
+                if class_name == "LLMBenchmark":
+                    self.assertEqual(options["environment"], {"HF_HOME": str(ROOT)})
+                else:
+                    self.assertNotIn("environment", options)
+
+    def test_amd_dispatcher_owns_one_cleanup_scope_for_all_container_stages(self):
+        cases = (
+            ("gemm", "GEMMHipBLAS", ["create_container", "build", "run_model_sizes"]),
+            ("rccl", "RCCLBandwidth", ["create_container", "build", "run"]),
+            ("fa", "FlashAttention", ["create_container", "run"]),
+            ("llm", "LLMBenchmark", ["create_container", "run_benchmark"]),
+        )
+        for name, class_name, methods in cases:
+            for failed_method in (None, *methods):
+                for exception in (runtime.CommandError, KeyboardInterrupt):
+                    with self.subTest(benchmark=name, failed_method=failed_method, exception=exception):
+                        container = Mock()
+                        instance = SimpleNamespace(container=None)
+                        events = []
+
+                        def execute(method):
+                            events.append(method)
+                            if method == "create_container":
+                                instance.container = container
+                            if method == failed_method:
+                                raise exception("failed")
+
+                        for method in methods:
+                            setattr(instance, method, Mock(side_effect=lambda m=method: execute(m)))
+                        module = SimpleNamespace(**{class_name: Mock(return_value=instance)})
+                        with patch.object(cli, "import_module", return_value=module), \
+                                patch.object(runtime, "managed_container",
+                                             wraps=runtime.managed_container) as managed:
+                            if failed_method is None:
+                                cli.run_benchmark("AMD", name, "MI300X")
+                            else:
+                                with self.assertRaises(exception):
+                                    cli.run_benchmark("AMD", name, "MI300X")
+                        managed.assert_called_once_with(instance)
+                        container.kill.assert_called_once()
+                        self.assertIsNone(instance.container)
+                        expected = methods if failed_method is None else methods[:methods.index(failed_method) + 1]
+                        self.assertEqual(events, expected)
+
+    def test_amd_container_options_are_independent_between_calls(self):
+        with patch.object(tools, "get_output_dir", return_value=Path("/results")):
+            first = tools.amd_container_options("/repo")
+            first["devices"].append("/extra")
+            first["volumes"].clear()
+            second = tools.amd_container_options("/repo")
+        self.assertNotIn("/extra", second["devices"])
+        self.assertIn("/repo", second["volumes"])
+
+    def test_rccl_build_uses_installed_library_and_only_pinned_allreduce_test(self):
+        module = load_module("Benchmarks/AMD/RCCLBandwidth.py")
+        output = Path("/results with spaces/rccl_run")
+        with patch.object(tools, "get_output_dir", return_value=output):
+            benchmark = module.RCCLBandwidth("unused", str(ROOT), "MI300X")
+        self.container_command.return_value = "2.21.5\n"
+        benchmark.build()
+        commands = [call.args[1] for call in self.container_command.call_args_list]
+        self.assertEqual(commands, [
+            ["test", "-r", "/usr/local/include/rccl/rccl.h"],
+            ["test", "-r", "/usr/local/lib/librccl.so"],
+            ["python3", "-c", module._VERSION_QUERY],
+            ["git", "clone", "https://github.com/ROCm/rccl-tests.git", str(output / "rccl-tests")],
+            ["git", "-C", str(output / "rccl-tests"), "checkout", "--detach", module._TESTS_REVISION],
+            ["make", "-C", str(output / "rccl-tests/src"), str(benchmark.test_executable),
+             f"BUILDDIR={output / 'rccl-tests/build'}", "ROCM_PATH=/opt/rocm",
+             "HIP_HOME=/opt/rocm", "NCCL_HOME=/usr/local", "CUSTOM_RCCL_LIB=/usr/local/lib"],
+            ["test", "-x", str(benchmark.test_executable)],
+        ])
+
+    def test_rccl_build_stops_on_missing_headers_library_or_failed_compilation(self):
+        module = load_module("Benchmarks/AMD/RCCLBandwidth.py")
+        for failure_index in (0, 1, 2, 5, 6):
+            with self.subTest(failure_index=failure_index):
+                benchmark = module.RCCLBandwidth("unused", str(ROOT), "MI300X")
+                self.container_command.reset_mock()
+                self.container_command.side_effect = (
+                    [""] * failure_index + [runtime.CommandError("dependency or build failed")]
+                )
+                with self.assertRaisesRegex(runtime.CommandError, "dependency or build failed"):
+                    benchmark.build()
+                self.assertEqual(self.container_command.call_count, failure_index + 1)
+                self.export.assert_not_called()
+
+    def test_rccl_run_uses_output_scoped_allreduce_binary(self):
+        module = load_module("Benchmarks/AMD/RCCLBandwidth.py")
+        output = Path("/results with spaces/rccl_run")
+        with patch.object(tools, "get_output_dir", return_value=output):
+            benchmark = module.RCCLBandwidth("unused", str(ROOT), "MI300X")
+        self.container_command.return_value = "8 2 float sum -1 1 2 3 0 1 2 3 0\n" * 31
+        benchmark.run()
+        self.assertEqual(self.container_command.call_count, 4)
+        for call, algorithm in zip(self.container_command.call_args_list, ("Tree", "Ring", "NVLS", "NVLSTree")):
+            self.assertEqual(call.args[1][:3], [
+                "env", f"NCCL_ALGO={algorithm}", str(output / "rccl-tests/build/all_reduce_perf"),
+            ])
+        table = self.export.call_args.args[2]
+        self.assertEqual(len(table.rows), 31)
+        self.assertEqual(table.field_names, ["Message Size", "Tree", "Ring", "NVLS", "NVLSTree"])
 
     def test_pretraining_machine_normalization(self):
         for name, expected in (("NVIDIA_H200", "H200"), ("NVIDIA_GB200", "GB200")):
@@ -192,7 +471,7 @@ class RegressionTests(unittest.TestCase):
                     benchmark.run_benchmark()
                     self.assertEqual(len(benchmark.table.rows), 6)
                     self.assertEqual(benchmark.table.rows[0][-1], "256.25")
-                container.kill.assert_called_once()
+                container.kill.assert_not_called()
                 if code or output == b"no measurements":
                     self.export.assert_not_called()
 
@@ -213,9 +492,9 @@ class RegressionTests(unittest.TestCase):
         command = self.container_command.call_args.args[1]
         self.assertEqual(command, ["python3", "/repo with spaces/flash-attention/benchmarks/benchmark_flash_attention.py"])
         self.assertEqual(self.export.call_args.args[2].rows, [["True", 128, 123.5, 45.25]])
-        container.kill.assert_called_once()
+        container.kill.assert_not_called()
 
-    def test_flash_attention_failure_cleans_up_without_report(self):
+    def test_flash_attention_failure_leaves_cleanup_to_dispatcher_without_report(self):
         module = load_module("Benchmarks/AMD/FlashAttention.py")
         benchmark = module.FlashAttention(str(ROOT), "MI300X")
         container = benchmark.container = Mock()
@@ -224,7 +503,7 @@ class RegressionTests(unittest.TestCase):
                 patch.object(module.tools, "run_command"), patch.object(benchmark, "create_container"):
             with self.assertRaises(RuntimeError):
                 benchmark.run()
-        container.kill.assert_called_once()
+        container.kill.assert_not_called()
         self.export.assert_not_called()
 
     def test_fio_json_and_cleanup_preserve_unrelated_files(self):
@@ -313,7 +592,7 @@ class RegressionTests(unittest.TestCase):
         command = self.container_command.call_args.args[1]
         self.assertIn("cd '/repo with spaces/Benchmarks/AMD'", command[2])
         self.assertTrue(command[2].endswith(" 123 456"))
-        container.kill.assert_called_once()
+        container.kill.assert_not_called()
         script = (ROOT / "Benchmarks/AMD/hipBLAS_runner.sh").read_text()
         self.assertIn("iters: $iterations, cold_iters: $warmup_iterations", script)
 

@@ -21,7 +21,6 @@ Performance benchmarks for Azure GPU SKUs — microbenchmarks, workload tests, a
 1. **[CuBLASLt GEMM](Benchmarks/NVIDIA/GEMMCublasLt.py)** — Measures matrix multiplication (GEMM) throughput using CuBLASLt across varying matrix sizes (m, n, k) with random initialization. Supports `fp8e4m3`, `fp4e2m1`, and `fp16` datatypes (configurable in `config.json`).
 
 2. **[NCCL Bandwidth](Benchmarks/NVIDIA/NCCLBandwidth.py)** — Measures inter-GPU data transfer bandwidth using NCCL across point-to-point and collective communication patterns (single-node and multi-node).
-   > 📎 [Wiki for Debugging Multi-Node NCCL Performance](https://dev.azure.com/msazure/AzureWiki/_wiki/wikis/AzureWiki.wiki/781566/Debugging-NCCL-Performance-Issues) *(Azure Internal Only)*
 
 3. **[HBM Bandwidth](Benchmarks/NVIDIA/HBMBandwidth.py)** — Measures GPU High Bandwidth Memory throughput (vertically stacked memory chips connected via through-silicon vias).
 
@@ -51,7 +50,7 @@ Performance benchmarks for Azure GPU SKUs — microbenchmarks, workload tests, a
 
 3. **[HBM Bandwidth](Benchmarks/AMD/HBMBandwidth.py)** — Measures GPU HBM throughput on MI300X.
 
-4. **[TransferBench](Benchmarks/AMD/TransferBench.py)** — Measures CPU↔GPU transfer bandwidth.
+4. **[TransferBench](Benchmarks/AMD/TransferBench.py)** — Measures CPU↔GPU bandwidth and a GPU↔GPU bidirectional total-bandwidth.
 
 5. **[Flash Attention](Benchmarks/AMD/FlashAttention.py)** — Benchmarks FlashAttention on ROCm, using tiling and recomputation to reduce memory usage from quadratic to linear.
 
@@ -61,22 +60,14 @@ Performance benchmarks for Azure GPU SKUs — microbenchmarks, workload tests, a
 
 ---
 
-# Benchmark Setup & Execution
+## Prerequisites
 
-### 1. Install Dependencies
+**Complete all these steps from the repository root before running benchmarks.**
 
-```bash
-# Recommended: use a virtual environment
-python3 -m venv venv && source venv/bin/activate
-
-# Install (auto-detects NVIDIA or AMD GPU)
-./install-dependencies.sh
-```
-
-### 2. Storage Requirements
+### Storage and Docker
 
 - **≥ 5 TB disk** recommended **only** if running LLM benchmarks (model weights are large).
-- Some AMD benchmarks use Docker containers (auto-created and killed). To avoid filling your boot disk, redirect Docker's data directory:
+- LLM benchmarks use Docker containers (auto-created and killed). To avoid filling your boot disk, redirect Docker's data directory to a location with enough space:
 
   ```bash
   # /etc/docker/daemon.json
@@ -88,14 +79,21 @@ python3 -m venv venv && source venv/bin/activate
   > Verify the NVMe mount path on your machine. You may need to complete Docker [post-installation steps](https://docs.docker.com/engine/install/linux-postinstall/).
 
 
-### 3. LLM Benchmark Setup 
-
-Pull and launch the TensorRT-LLM container (NVIDIA Platforms Only):
-
+### Install Dependencies
 
 ```bash
-# Make sure you are in AI-benchmarking-guide directory
- 
+# Recommended: use a virtual environment
+python3 -m venv venv && source venv/bin/activate
+
+# Install (auto-detects NVIDIA or AMD GPU)
+./install-dependencies.sh
+```
+
+### LLM Benchmark Setup (LLM Tests Only)
+
+For NVIDIA LLM inference, pull and launch the TensorRT-LLM container:
+
+```bash
 docker pull nvcr.io/nvidia/tensorrt-llm/release:1.3.0rc14
 
 docker run --rm -it --ipc host --gpus all \
@@ -114,7 +112,16 @@ huggingface-cli login
 
 > Get your token from [huggingface.co](https://huggingface.co/).
 
-### 4. Run Benchmarks
+### Configuration (LLM Tests Only)
+
+- **[`config.json`](config.json)** controls LLM benchmark settings (models, input/output sizes, tensor parallelism, precision, pretraining params).
+- To benchmark a specific model, set `"use_model": true` in the [`models`](config.json#L7) field.
+- NVIDIA models are marked `"type": "nvidia"`, AMD models are marked `"type": "amd"`.
+
+## Run Benchmarks
+
+Run from the repository root after completing the prerequisites. For NVIDIA LLM
+inference, run inside the TensorRT-LLM container launched above.
 
 **NVIDIA** — `python3 NVIDIA_runner.py BENCHMARK [BENCHMARK ...] [OPTIONS]`
 
@@ -144,7 +151,7 @@ huggingface-cli login
 | `fio` | FIO (Storage I/O) |
 | `llm` | LLM Inference |
 
-Run from the repository root. Pass one or more names, or `all`:
+Pass one or more benchmark names, or `all`:
 
 ```bash
 python3 NVIDIA_runner.py hbm nccl
@@ -154,12 +161,6 @@ python3 AMD_runner.py hbm transfer
 Use `--help` for options. See the
 [Benchmark Execution Guide](docs/benchmark-execution-guide.md) for CLI options,
 logging, output formats, and recovery behavior.
-
-### Configuration
-
-- **[`config.json`](config.json)** controls LLM benchmark settings (models, input/output sizes, tensor parallelism, precision, pretraining params).
-- To benchmark a specific model, set `"use_model": true` in the [`models`](config.json#L7) field.
-- NVIDIA models are marked `"type": "nvidia"`, AMD models are marked `"type": "amd"`.
 
 ### Output
 
