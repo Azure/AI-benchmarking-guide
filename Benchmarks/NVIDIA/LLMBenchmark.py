@@ -87,6 +87,7 @@ class LLMBenchmark:
                 with results.open("w") as file:
                     tools.run_command([
                         "trtllm-bench", "--model", name, "throughput",
+                        "--backend", "tensorrt",
                         "--dataset", str(self.dataset_path(name, isl, osl)),
                         "--engine_dir", str(self.dir_path / "engines" / name / f"tp_{model['tp_size']}_pp_1"),
                         "--kv_cache_free_gpu_mem_fraction", "0.80",
