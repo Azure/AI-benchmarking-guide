@@ -44,7 +44,7 @@ Review logs and artifacts before sharing them; secret redaction is best-effort.
 | Benchmark | Caveat |
 |-----------|--------|
 | AMD | Requires MI300X (`gfx942`). |
-| NVIDIA HBM | Unsupported on GB200. |
+| NVIDIA HBM | GB200 builds target `sm_100`; requires a CUDA toolkit supporting that architecture. |
 | Llama pretraining | H200/GB200 only; `mount_path` must contain the training script and `config.json`. |
 | AMD GEMM | First-run hipBLASLt compilation can take tens of minutes, with long silent periods. |
 | AMD RCCL | Uses the container's installed library and builds only pinned AllReduce tests in the run directory. |
@@ -88,3 +88,41 @@ Images are pulled only when missing. Refresh a cached tag with `docker pull IMAG
 Docker requires both the CLI and Python SDK, with daemon permissions for the
 calling user. Containers are cleaned up after runs; a hard kill or daemon outage
 may prevent cleanup.
+
+### TensorRT-LLM container setup
+
+After entering the TensorRT-LLM container, install `prettytable` before running
+the NVIDIA LLM benchmarks:
+
+```bash
+python3 -m pip install prettytable
+```
+
+### Relocating Docker and containerd storage
+
+Docker's containerd image store uses a separate path from Docker's `data-root`.
+Configure `data-root` as shown in the [README](../README.md#storage-and-docker).
+Merge these **top-level** settings into `/etc/containerd/config.toml`, preserving
+existing runtime settings and leaving `state` unchanged:
+
+```toml
+root = "/mnt/resource_nvme/containerd"
+temp = "/mnt/resource_nvme/containerd/tmp"
+```
+
+For existing installations, back up both configs and stop services **before
+editing or migrating**. Preserve existing Docker settings, including NVIDIA
+runtimes. Substitute your actual mount and source paths if different:
+
+```bash
+sudo systemctl stop docker.service docker.socket containerd.service
+# Edit the configs above, then migrate existing data (requires rsync).
+sudo mkdir -p /mnt/resource_nvme/docker /mnt/resource_nvme/containerd
+sudo rsync -aHAX --numeric-ids /var/lib/docker/ /mnt/resource_nvme/docker/
+sudo rsync -aHAX --numeric-ids /var/lib/containerd/ /mnt/resource_nvme/containerd/
+sudo mkdir -p /mnt/resource_nvme/containerd/tmp
+sudo systemctl start containerd.service docker.socket docker.service
+```
+
+Ensure the destination disk is mounted before either service starts. Keep the
+original data until pulls and container execution succeed.
