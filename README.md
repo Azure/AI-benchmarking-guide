@@ -76,6 +76,8 @@ Performance benchmarks for Azure GPU SKUs — microbenchmarks, workload tests, a
   }
   ```
 
+  For containerd storage and existing-data migration, see the [storage guide](docs/benchmark-execution-guide.md#relocating-docker-and-containerd-storage).
+
   > Verify the NVMe mount path on your machine. You may need to complete Docker [post-installation steps](https://docs.docker.com/engine/install/linux-postinstall/).
 
 
@@ -102,6 +104,8 @@ docker run --rm -it --ipc host --gpus all \
   -w $PWD \
   nvcr.io/nvidia/tensorrt-llm/release:1.3.0rc14
 ```
+
+The runner pins the TensorRT-LLM source to tag `v1.3.0rc14` to match this container, including existing checkouts.
 
 Inside the container, set HuggingFace home and login:
 
