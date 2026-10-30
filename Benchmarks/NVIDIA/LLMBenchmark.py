@@ -8,6 +8,9 @@ from prettytable import PrettyTable
 from Infra import tools
 
 
+_TENSORRT_LLM_TAG = "v1.3.0rc14"
+
+
 class LLMBenchmark:
     def __init__(self, config_path: str, dir_path: str, machine: str):
         self.name = "LLMBenchmark"
@@ -29,7 +32,13 @@ class LLMBenchmark:
         os.environ["HF_HOME"] = str(self.dir_path)
         repository = self.dir_path / "TensorRT-LLM"
         if not repository.exists():
-            tools.run_command(["git", "clone", "https://github.com/NVIDIA/TensorRT-LLM.git", str(repository)])
+            tools.run_command([
+                "git", "clone", "--branch", _TENSORRT_LLM_TAG, "--single-branch",
+                "https://github.com/NVIDIA/TensorRT-LLM.git", str(repository),
+            ])
+        else:
+            tools.run_command(["git", "-C", str(repository), "fetch", "origin", "tag", _TENSORRT_LLM_TAG])
+            tools.run_command(["git", "-C", str(repository), "checkout", "--detach", _TENSORRT_LLM_TAG])
 
     def download_models(self):
         for name, _ in self.models():
