@@ -6,7 +6,7 @@
     "LLMBenchmark": {
         "models": {
             "meta-llama/Llama-3.1-8B":{
-                "use_model": true,
+                "use_model": false,
                 "type": "nvidia",
                 "input_sizes": [128, 128, 128, 500, 1024, 2048],
                 "output_sizes": [128, 1024, 2048, 2000, 1024, 2048],
@@ -16,11 +16,11 @@
             },
 
             "meta-llama/Llama-3.1-70B":{
-                "use_model": false,
+                "use_model": true,
                 "type": "nvidia",
                 "input_sizes": [128, 128, 128, 500, 1024, 2048],
                 "output_sizes": [128, 1024, 2048, 2000, 1024, 2048],
-                "tp_size": 8,
+                "tp_size": 4,
                 "num_requests": 1000,
                 "precision": "FP8"
             },
@@ -30,7 +30,7 @@
                 "type": "nvidia",
                 "input_sizes": [128, 128, 128, 500, 1024, 2048],
                 "output_sizes": [128, 1024, 2048, 2000, 1024, 2048],
-                "tp_size": 8,
+                "tp_size": 4,
                 "num_requests": 1000,
                 "precision": "FP8"
             },
